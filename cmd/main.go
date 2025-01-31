@@ -12,15 +12,23 @@ import (
 	"time"
 	"tutorial/internal/config"
 	"tutorial/internal/http/handlers/hello"
+	"tutorial/internal/storage/sqlite"
 )
 
 func main() {
 	cfg := config.MustLoad()
 
+	storage,err := sqlite.New(cfg)
+
+	if err!= nil{
+		log.Fatal(err)
+	}
+
+	slog.Info("database initialized",slog.String("env",cfg.Env))
 	router := http.NewServeMux()
 
 	router.HandleFunc("GET /", hello.GetHello())
-	router.HandleFunc("POST /post", hello.PostHello())
+	router.HandleFunc("POST /post", hello.PostHello(storage))
 
 
 	//setup server
@@ -44,7 +52,7 @@ func main() {
 	slog.Info("shutting down the server")
 	ctx,cancel := context.WithTimeout(context.Background(), 5 * time.Second)
 	defer cancel()
-	err := server.Shutdown(ctx)
+	err = server.Shutdown(ctx)
 	if err!= nil{
 		slog.Error("Failed to shutdown server", slog.String("errir",err.Error()))
 	}

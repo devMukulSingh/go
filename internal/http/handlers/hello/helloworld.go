@@ -5,8 +5,10 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"tutorial/internal/storage"
 	"tutorial/internal/types"
 	"tutorial/internal/utils/response"
+
 	"github.com/go-playground/validator/v10"
 )
 
@@ -16,7 +18,7 @@ func GetHello() http.HandlerFunc {
 	}
 }
 
-func PostHello() http.HandlerFunc{
+func PostHello(storage storage.Storage) http.HandlerFunc{
 	return func( w http.ResponseWriter, r * http.Request){
 
 		var postData types.PostData
@@ -39,8 +41,18 @@ func PostHello() http.HandlerFunc{
 			response.WriteJson(w,http.StatusBadRequest,response.ValidationError(validateErrs))
 			return;
 		}
-		w.Write([]byte("postHello"))
+
+		lastId,err := storage.CreateStudent(
+			postData.Email,
+			postData.Name,
+			postData.Id,
+		)
+
+		if err!= nil{
+			response.WriteJson(w,http.StatusInternalServerError,err)
+			return
+		}
 		
-		response.WriteJson(w, http.StatusCreated,postData)
+		response.WriteJson(w, http.StatusCreated,lastId )
 	}
 }
